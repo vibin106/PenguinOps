@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PenguinOps - Gamified Project Management</title>
+    <!-- Tailwind CSS (via CDN for vanilla integration since no build step specified) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body class="bg-dark min-h-screen flex flex-col pt-10 px-4 items-center">
+
+    <nav class="w-full max-w-6xl glass-card px-8 py-4 flex justify-between items-center mb-16" id="navbar">
+        <div class="sidebar-logo !mb-0 text-glow-blue">🐧 PenguinOps</div>
+        <div class="flex gap-4">
+            <a href="login.html" class="btn-outline">Login</a>
+            <a href="register.html" class="btn-primary flex items-center gap-2">Get Started <span class="text-xl">🚀</span></a>
+        </div>
+    </nav>
+
+    <main class="text-center max-w-4xl main-content flex-1 pt-10" id="hero">
+        <div class="inline-block glass-card px-4 py-2 mb-8 text-neon-blue font-bold rounded-full">
+            v2.0 Beta Active
+        </div>
+        <h1 class="text-5xl md:text-7xl font-bold brand-font mb-6 leading-tight">
+            Level up your <br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#b026ff]">Project Management</span>
+        </h1>
+        <p class="text-lg md:text-xl text-muted mb-10 max-w-2xl mx-auto">
+            Gamified productivity for modern teams. Earn XP, collect badges, and collaborate on tasks with an AI-powered penguin assistant guiding your every move.
+        </p>
+        
+        <div class="flex justify-center gap-6 mb-20 animate-buttons">
+            <a href="register.html" class="btn-primary text-xl px-10 py-5">Start for free</a>
+            <a href="#features" class="btn-outline text-xl px-10 py-5">View Features</a>
+        </div>
+
+        <!-- Features Grid -->
+        <div id="features" class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mt-20">
+            <div class="glass-card p-8 hover-effect">
+                <div class="text-5xl mb-4">🤖</div>
+                <h3 class="text-2xl font-bold brand-font mb-3 text-glow-blue">Mascot Guide</h3>
+                <p class="text-muted">An interactive floating AI penguin that walks you through tutorials, onboarding, and helps you when struck.</p>
+            </div>
+            <div class="glass-card p-8 hover-effect">
+                <div class="text-5xl mb-4">📈</div>
+                <h3 class="text-2xl font-bold brand-font mb-3 text-glow-purple">XP System</h3>
+                <p class="text-muted">Earn XP by completing tasks. Visualize your progress with interactive charts and dynamic growth bars.</p>
+            </div>
+            <div class="glass-card p-8 hover-effect">
+                <div class="text-5xl mb-4">🏆</div>
+                <h3 class="text-2xl font-bold brand-font mb-3 text-glow-blue">Leaderboards</h3>
+                <p class="text-muted">Compete globally against other teams and rank up on dynamic user leaderboards featuring neon aesthetics.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full text-center py-8 text-muted mt-20 border-t border-[rgba(255,255,255,0.08)]">
+        &copy; 2026 PenguinOps Platform. Built with Vanilla Web Tech.
+    </footer>
+
+    <script type="module">
+        import { Animations } from './js/animations.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup specific page animations
+            gsap.from('#navbar', { y: -50, opacity: 0, duration: 1, ease: 'power3.out' });
+            gsap.from('#hero h1', { y: 30, opacity: 0, duration: 1, delay: 0.2, ease: 'power3.out' });
+            gsap.from('#hero p', { y: 30, opacity: 0, duration: 1, delay: 0.4, ease: 'power3.out' });
+            gsap.from('.animate-buttons', { y: 30, opacity: 0, duration: 1, delay: 0.6, ease: 'power3.out' });
+            Animations.staggerCards('.hover-effect');
+        });
+    </script>
+</body>
+</html>

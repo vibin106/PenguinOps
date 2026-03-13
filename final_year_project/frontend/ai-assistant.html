@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant – PenguinOps</title>
+    <meta name="description" content="PenguinAI — your gamified project intelligence assistant.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body { overflow: hidden; }
+        .app-container { height: 100vh; overflow: hidden; }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.2); border-radius: 10px; }
+        .typing-dot { width:8px;height:8px;border-radius:50%;background:var(--neon-blue);display:inline-block;animation:typingBounce 1.1s infinite; }
+        .typing-dot:nth-child(2){animation-delay:.18s}
+        .typing-dot:nth-child(3){animation-delay:.36s}
+        @keyframes typingBounce{ 0%,80%,100%{transform:translateY(0);opacity:.6} 40%{transform:translateY(-6px);opacity:1} }
+        .suggestion-chip {
+            display:inline-flex;align-items:center;gap:6px;
+            padding:7px 14px;border-radius:20px;
+            background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.2);
+            color:var(--neon-blue);font-size:.8rem;font-weight:500;
+            cursor:pointer;transition:all .2s;flex-shrink:0;white-space:nowrap;
+        }
+        .suggestion-chip:hover{background:rgba(0,240,255,0.12);border-color:rgba(0,240,255,0.4)}
+        #chat-box { display:flex;flex-direction:column;gap:20px; }
+    </style>
+</head>
+<body>
+<div class="app-container" style="display:flex">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <!-- Chat area (full height) -->
+    <div class="chat-container" style="flex:1;min-width:0">
+
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="chat-ai-avatar" id="ai-avatar">🐧</div>
+            <div style="flex:1">
+                <div style="font-family:'Outfit',sans-serif;font-size:1.15rem;font-weight:800;display:flex;align-items:center;gap:10px">
+                    PenguinAI
+                    <span class="chat-status-dot"></span>
+                    <span style="font-size:.72rem;color:var(--neon-green);font-weight:600">Online</span>
+                </div>
+                <div style="font-size:.8rem;color:var(--text-muted);margin-top:2px">Powered by LLaMA 3 · Ask anything about tasks, projects, or strategy</div>
+            </div>
+            <div style="display:flex;gap:8px">
+                <button class="btn-outline" id="clear-chat-btn" style="font-size:.8rem;padding:7px 14px">🗑 Clear</button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chat-messages">
+
+            <!-- AI greeting -->
+            <div class="chat-bubble ai" id="greeting-bubble">
+                <div class="bubble-avatar" style="background:rgba(0,240,255,0.1);border:1.5px solid rgba(0,240,255,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;border-radius:10px">🐧</div>
+                <div>
+                    <div style="font-size:.72rem;color:var(--neon-blue);font-weight:700;margin-bottom:5px">PenguinAI <span style="color:var(--text-muted);font-weight:400">· just now</span></div>
+                    <div class="bubble-body">
+                        🎯 Greetings, Commander! I'm <strong>PenguinAI</strong>, your intelligent operations assistant.<br><br>
+                        I can help you with:<br>
+                        &nbsp;• Breaking down projects into tasks<br>
+                        &nbsp;• Suggesting task priorities<br>
+                        &nbsp;• Explaining your XP & leaderboard rank<br>
+                        &nbsp;• Strategic advice for your team<br><br>
+                        What's your first order?
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggestions row -->
+        <div id="suggestions-row" style="padding:10px 24px;display:flex;gap:8px;overflow-x:auto;border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;background:rgba(8,11,20,0.7)">
+            <button class="suggestion-chip" data-msg="How can I earn more XP?">⚡ How to earn XP?</button>
+            <button class="suggestion-chip" data-msg="Summarize my task board status">📋 Task board summary</button>
+            <button class="suggestion-chip" data-msg="Give me tips to climb the leaderboard">🏆 Leaderboard tips</button>
+            <button class="suggestion-chip" data-msg="How should I prioritize my tasks?">🎯 Prioritize tasks</button>
+            <button class="suggestion-chip" data-msg="What badges can I earn next?">🏅 Next badge to earn</button>
+        </div>
+
+        <!-- Input Footer -->
+        <div class="chat-footer">
+            <form id="chat-form">
+                <div class="chat-input-wrap">
+                    <input type="text" id="chat-input" placeholder="Message PenguinAI…" autocomplete="off" maxlength="500">
+                    <button type="submit" class="chat-send-btn" id="chat-send">➤</button>
+                </div>
+            </form>
+            <div style="text-align:center;margin-top:8px;font-size:.72rem;color:var(--text-muted)">
+                AI responses are informational only. Verify critical decisions independently.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { Auth, protectRoute, applyRoleUI } from './js/auth.js';
+import { initSidebar, showToast } from './js/ui.js';
+import { apiRequest }  from './js/api.js';
+
+protectRoute();
+applyRoleUI();
+
+document.addEventListener('DOMContentLoaded', () => {
+    initSidebar('ai-assistant.html');
+
+    // Animate AI avatar
+    gsap.to('#ai-avatar', { y: -4, duration: 1.6, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.from('#greeting-bubble', { opacity: 0, y: 20, duration: 0.7, ease: 'power3.out', delay: 0.3 });
+
+    const messagesEl = document.getElementById('chat-messages');
+    const input      = document.getElementById('chat-input');
+    const sendBtn    = document.getElementById('chat-send');
+    const form       = document.getElementById('chat-form');
+
+    const user     = JSON.parse(localStorage.getItem('penguin_user') || '{}');
+    const userName = user.name || 'Commander';
+    const seed     = encodeURIComponent(userName);
+
+    function scrollBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function appendMessage(text, sender = 'ai', timestamp = null) {
+        const now = timestamp || new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${sender}`;
+
+        if (sender === 'ai') {
+            div.innerHTML = `
+                <div class="bubble-avatar" style="background:rgba(0,240,255,0.1);border:1.5px solid rgba(0,240,255,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;border-radius:10px;flex-shrink:0">🐧</div>
+                <div>
+                    <div style="font-size:.72rem;color:var(--neon-blue);font-weight:700;margin-bottom:5px">PenguinAI <span style="color:var(--text-muted);font-weight:400">· ${now}</span></div>
+                    <div class="bubble-body">${text.replace(/\n/g,'<br>')}</div>
+                </div>`;
+        } else {
+            div.innerHTML = `
+                <div>
+                    <div style="font-size:.72rem;color:var(--neon-purple);font-weight:700;margin-bottom:5px;text-align:right">${userName} <span style="color:var(--text-muted);font-weight:400">· ${now}</span></div>
+                    <div class="bubble-body">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+                </div>
+                <div class="bubble-avatar" style="background:rgba(168,85,247,0.1);border:1.5px solid rgba(168,85,247,0.3);border-radius:10px;overflow:hidden;flex-shrink:0">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${seed}" style="width:100%;height:100%;object-fit:cover">
+                </div>`;
+        }
+
+        messagesEl.appendChild(div);
+        gsap.fromTo(div, { opacity:0, y:16, scale:0.97 }, { opacity:1, y:0, scale:1, duration:0.4, ease:'power2.out' });
+        scrollBottom();
+        return div;
+    }
+
+    function showTyping() {
+        const el = document.createElement('div');
+        el.className = 'chat-bubble ai';
+        el.id = 'typing-indicator';
+        el.innerHTML = `
+            <div class="bubble-avatar" style="background:rgba(0,240,255,0.1);border:1.5px solid rgba(0,240,255,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;border-radius:10px;flex-shrink:0">🐧</div>
+            <div class="bubble-body" style="display:flex;gap:5px;align-items:center;padding:14px 16px">
+                <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+            </div>`;
+        messagesEl.appendChild(el);
+        scrollBottom();
+        return el;
+    }
+
+    async function sendMessage(text) {
+        if (!text.trim()) return;
+        input.value = '';
+        appendMessage(text, 'user');
+
+        // Hide suggestions after first message
+        document.getElementById('suggestions-row').style.display = 'none';
+
+        const typingEl = showTyping();
+        sendBtn.disabled = true;
+
+        try {
+            const res = await apiRequest('/ai/chatbot/', 'POST', { message: text });
+            typingEl.remove();
+            const reply = res?.reply || res?.message || res?.response || res?.output || '…processing complete.';
+            appendMessage(reply, 'ai');
+        } catch (err) {
+            typingEl.remove();
+            const fallbacks = [
+                "I'm analyzing the mission parameters. The backend comm-link is initialising — stand by.",
+                "Acknowledged, Commander. Running tactical analysis now…",
+                `Query received: "${text}"\n\nTip: Complete high-priority tasks first to maximise XP gain this week!`,
+            ];
+            appendMessage(fallbacks[Math.floor(Math.random() * fallbacks.length)], 'ai');
+            showToast('AI backend temporarily unavailable — showing cached response', 'info');
+        } finally {
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); sendMessage(input.value.trim()); });
+
+    // Suggestion chips
+    document.querySelectorAll('.suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', () => sendMessage(chip.dataset.msg));
+    });
+
+    // Clear chat
+    document.getElementById('clear-chat-btn').addEventListener('click', () => {
+        messagesEl.innerHTML = '';
+        document.getElementById('suggestions-row').style.display = 'flex';
+        appendMessage("Chat cleared. What's your next order, Commander?", 'ai');
+    });
+});
+</script>
+</body>
+</html>

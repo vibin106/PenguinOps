@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register – PenguinOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    </style>
+</head>
+<body>
+
+<div style="width:100%;max-width:440px;position:relative;z-index:1" id="auth-card">
+
+    <div style="text-align:center;margin-bottom:28px" id="logo-area">
+        <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple));display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 0 28px rgba(124,111,255,0.4)">🐧</div>
+        <h1 style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;background:linear-gradient(90deg,var(--neon-frost),var(--neon-blue),var(--neon-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">PenguinOps</h1>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-top:4px">Create your operator profile</p>
+    </div>
+
+    <div class="glass-panel" style="padding:30px">
+        <h2 style="font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:700;margin-bottom:5px">Join the Squad</h2>
+        <p style="color:var(--text-muted);font-size:.84rem;margin-bottom:22px">Set up your PenguinOps account</p>
+
+        <div id="success-banner" style="display:none;background:rgba(0,255,179,0.08);border:1px solid rgba(0,255,179,0.3);border-radius:10px;padding:11px 14px;font-size:.85rem;color:var(--neon-green);margin-bottom:14px">
+            ✅ Account created! Redirecting to login…
+        </div>
+
+        <div id="error-banner" style="display:none;align-items:center;gap:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:11px 14px;font-size:.85rem;color:#f87171;margin-bottom:14px">
+            ⚠️ <span id="error-text">Registration failed.</span>
+        </div>
+
+        <form id="register-form" onsubmit="return false">
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:.76rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Full Name</label>
+                <input type="text" id="reg-name" class="input-glass" placeholder="Commander Frosty" required>
+            </div>
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:.76rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Email</label>
+                <input type="email" id="reg-email" class="input-glass" placeholder="frosty@penguinops.com" required>
+            </div>
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:.76rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Role</label>
+                <select id="reg-role" class="input-glass" style="padding:10px 12px">
+                    <option value="member">🐧 Team Member</option>
+                    <option value="manager">🛡 Manager</option>
+                </select>
+            </div>
+            <div style="margin-bottom:22px">
+                <label style="display:block;font-size:.76rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Password</label>
+                <input type="password" id="reg-password" class="input-glass" placeholder="Min. 6 characters" required minlength="6">
+            </div>
+
+            <button type="button" id="reg-btn" onclick="handleRegister()"
+                    class="btn-primary" style="width:100%;justify-content:center;padding:13px">
+                <span id="reg-btn-text">Create Account →</span>
+            </button>
+        </form>
+
+        <div style="text-align:center;margin-top:18px;font-size:.85rem;color:var(--text-muted)">
+            Already have an account?
+            <a href="login.html" style="color:var(--neon-blue);font-weight:600;text-decoration:none">Sign in →</a>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { apiRequest }  from './js/api.js';
+import { showToast }   from './js/ui.js';
+
+if (localStorage.getItem('token')) window.location.replace('dashboard.html');
+
+// Entrance animations
+document.addEventListener('DOMContentLoaded', () => {
+    gsap.from('#logo-area',   { y: -30, opacity: 0, duration: 0.8, ease: 'power3.out' });
+    gsap.from('.glass-panel', { y:  30, opacity: 0, duration: 0.7, delay: 0.15, ease: 'power3.out' });
+});
+
+// Expose globally for onclick
+window.handleRegister = async function () {
+    const name     = document.getElementById('reg-name').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const role     = document.getElementById('reg-role').value;
+
+    const btn     = document.getElementById('reg-btn');
+    const btnText = document.getElementById('reg-btn-text');
+    const errDiv  = document.getElementById('error-banner');
+    const sucDiv  = document.getElementById('success-banner');
+    const errText = document.getElementById('error-text');
+
+    btn.disabled = true;
+    btnText.textContent = 'Creating…';
+    errDiv.style.display = 'none';
+    sucDiv.style.display = 'none';
+
+    try {
+        await apiRequest('/auth/register', 'POST', { name, email, password, role });
+        sucDiv.style.display = 'block';
+        showToast('Squad joined! Redirecting to login…', 'success');
+        setTimeout(() => window.location.href = 'login.html', 1800);
+    } catch(err) {
+        errText.textContent  = err.message || 'Registration failed.';
+        errDiv.style.display = 'flex';
+        gsap.from(errDiv, { x: -8, duration: 0.3, ease: 'power2.out' });
+        btn.disabled = false;
+        btnText.textContent = 'Create Account →';
+    }
+};
+</script>
+</body>
+</html>

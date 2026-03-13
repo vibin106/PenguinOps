@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard – PenguinOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        .podium-bar { border-radius:10px 10px 0 0; background:linear-gradient(to top, rgba(255,255,255,0.04), rgba(255,255,255,0.08)); border:1px solid rgba(255,255,255,0.07); display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:16px 12px; gap:8px; min-width:90px; transition:all .3s; }
+        .lb-row { display:flex; align-items:center; gap:0; padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.03); transition:background .2s; }
+        .lb-row:hover { background:rgba(255,255,255,0.025); }
+        .lb-row.me { background:rgba(168,85,247,0.07); border:1px solid rgba(168,85,247,0.2); border-radius:12px; margin:4px 0; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content page-fade">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title gradient-text">🏆 Leaderboard</h1>
+                <p class="page-subtitle">Global rankings — compete, level up, dominate</p>
+            </div>
+            <span class="tag" id="lb-updated" style="font-size:.8rem">Updated just now</span>
+        </div>
+
+        <!-- Podium Top 3 -->
+        <div class="glass-panel" style="padding:32px 24px;margin-bottom:24px">
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:12px" id="podium">
+
+                <!-- 2nd -->
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px" id="podium-2">
+                    <img src="" id="pod2-avatar" style="width:52px;height:52px;border-radius:14px;border:2px solid #a0aec0;background:rgba(255,255,255,0.05)" alt="2nd">
+                    <div style="font-size:.85rem;font-weight:700" id="pod2-name">—</div>
+                    <div class="podium-bar" style="height:110px;border-color:rgba(160,174,192,0.25)">
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#a0aec0;font-weight:700" id="pod2-xp">0</span>
+                        <span style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:#a0aec0">#2</span>
+                    </div>
+                </div>
+
+                <!-- 1st -->
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px" id="podium-1">
+                    <div style="font-size:1.8rem;animation:bounce 1s infinite alternate">👑</div>
+                    <img src="" id="pod1-avatar" style="width:64px;height:64px;border-radius:16px;border:3px solid #ffe54c;box-shadow:0 0 20px rgba(255,229,76,0.4);background:rgba(255,255,255,0.05)" alt="1st">
+                    <div style="font-size:.9rem;font-weight:700;color:var(--neon-yellow)" id="pod1-name">—</div>
+                    <div class="podium-bar" style="height:150px;border-color:rgba(255,229,76,0.25)">
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--neon-yellow);font-weight:700" id="pod1-xp">0</span>
+                        <span style="font-family:'Outfit',sans-serif;font-size:2.4rem;font-weight:800;color:var(--neon-yellow)">🥇</span>
+                    </div>
+                </div>
+
+                <!-- 3rd -->
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px" id="podium-3">
+                    <img src="" id="pod3-avatar" style="width:48px;height:48px;border-radius:12px;border:2px solid var(--neon-orange);background:rgba(255,255,255,0.05)" alt="3rd">
+                    <div style="font-size:.82rem;font-weight:700;color:var(--neon-orange)" id="pod3-name">—</div>
+                    <div class="podium-bar" style="height:90px;border-color:rgba(255,123,0,0.25)">
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--neon-orange);font-weight:700" id="pod3-xp">0</span>
+                        <span style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:var(--neon-orange)">#3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Table -->
+        <div class="glass-panel" style="padding:0;overflow:hidden">
+            <div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center">
+                <h2 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700">Full Rankings</h2>
+                <span class="tag" id="total-players">0 commanders</span>
+            </div>
+
+            <!-- Table header -->
+            <div style="display:grid;grid-template-columns:60px 1fr 100px 80px 120px;padding:10px 22px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,0.05)">
+                <div>Rank</div>
+                <div>Commander</div>
+                <div style="text-align:center">Level</div>
+                <div style="text-align:center">Tasks</div>
+                <div style="text-align:right">XP</div>
+            </div>
+
+            <div id="lb-rows"></div>
+        </div>
+    </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { Auth, protectRoute } from './js/auth.js';
+import { initSidebar, showToast } from './js/ui.js';
+import { apiRequest }  from './js/api.js';
+
+protectRoute();
+
+document.addEventListener('DOMContentLoaded', async () => {
+    initSidebar('leaderboard.html');
+
+    // Read username from canonical key first, then fallback
+    const myName = localStorage.getItem('username')
+        || JSON.parse(localStorage.getItem('penguin_user') || '{}').name
+        || '';
+
+    // Mock data (backend has no /users/leaderboard yet)
+    const players = [
+        { name:'PenguinMaster', xp:9001, level:45, tasks:210 },
+        { name:'IceKing',       xp:8500, level:42, tasks:198 },
+        { name:'SnowDrifter',   xp:7200, level:38, tasks:163 },
+        { name:'FrostBite',     xp:6400, level:35, tasks:145 },
+        { name:'GlacierRunner', xp:5120, level:30, tasks:112 },
+        { name:'ArcticFox',     xp:4800, level:28, tasks:105 },
+        { name:'PolarBear',     xp:4200, level:25, tasks:90  },
+        { name:'IglooBuilder',  xp:3800, level:22, tasks:80  },
+        { name:'SnowballChamp', xp:2900, level:18, tasks:62  },
+        { name: myName || 'You', xp:1250, level:5,  tasks:18  },
+    ].sort((a,b) => b.xp - a.xp);
+
+    // Try real API
+    try {
+        const data = await apiRequest('/users/leaderboard', 'GET');
+        if (Array.isArray(data) && data.length) {
+            players.length = 0;
+            data.forEach(u => players.push(u));
+        }
+    } catch {}
+
+    // Assign ranks
+    players.forEach((p, i) => p.rank = i + 1);
+
+    document.getElementById('total-players').textContent = `${players.length} commanders`;
+
+    // ─── Podium ───
+    const podNames = ['pod1','pod2','pod3'];
+    [0,1,2].forEach(i => {
+        const p = players[i];
+        if (!p) return;
+        const idx = [0,1,2][i]; // 1st=0, 2nd=1, 3rd=2
+        const n = podNames[i];
+        document.getElementById(`${n}-avatar`).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}`;
+        document.getElementById(`${n}-name`).textContent = p.name;
+
+        // Count XP up
+        const xpEl = document.getElementById(`${n}-xp`);
+        const obj  = { val: 0 };
+        gsap.to(obj, { val: p.xp, duration: 2, delay: 0.5 + i * 0.2, ease:'power3.out',
+            onUpdate() { xpEl.textContent = Math.floor(obj.val).toLocaleString() + ' XP'; }
+        });
+    });
+
+    // Podium entrance
+    gsap.from(['#podium-2','#podium-1','#podium-3'], { y: 60, opacity: 0, stagger: 0.15, duration: 0.8, ease:'back.out(1.5)', delay: 0.2 });
+
+    // ─── Rows ───
+    const rowContainer = document.getElementById('lb-rows');
+    const rankColors   = ['#ffe54c','#a0aec0','#ff7b00'];
+
+    players.forEach((p, i) => {
+        const isMe = p.name === myName;
+        const row  = document.createElement('div');
+        row.className   = `lb-row${isMe ? ' me' : ''}`;
+        row.style.cssText = 'display:grid;grid-template-columns:60px 1fr 100px 80px 120px;align-items:center;gap:0;';
+
+        row.innerHTML = `
+            <div class="rank-badge rank-${p.rank <= 3 ? p.rank : 'other'}" style="color:${p.rank<=3 ? rankColors[p.rank-1] : 'var(--text-muted)'}">
+                ${p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1] : '#' + p.rank}
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" style="width:32px;height:32px;border-radius:9px;border:1px solid rgba(255,255,255,0.08)">
+                <span style="font-weight:600;font-size:.9rem">${p.name}</span>
+                ${isMe ? '<span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:9px;background:rgba(168,85,247,0.2);color:var(--neon-purple);border:1px solid rgba(168,85,247,0.3)">YOU</span>' : ''}
+            </div>
+            <div style="text-align:center;font-size:.85rem;color:var(--neon-purple);font-weight:700">Lv.${p.level}</div>
+            <div style="text-align:center;font-size:.85rem;color:var(--text-muted)">${p.tasks}</div>
+            <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;color:var(--neon-blue)" data-xp="${p.xp}">0</div>
+        `;
+
+        rowContainer.appendChild(row);
+    });
+
+    // Stagger rows
+    gsap.from('.lb-row', { opacity: 0, x: -20, stagger: 0.04, duration: 0.5, ease:'power2.out', delay: 0.4 });
+
+    // Count up XP in rows
+    document.querySelectorAll('.lb-row [data-xp]').forEach((el, i) => {
+        const target = parseInt(el.dataset.xp);
+        const obj    = { val: 0 };
+        gsap.to(obj, {
+            val: target, duration: 1.8, delay: 0.5 + i * 0.04, ease:'power3.out',
+            onUpdate() { el.textContent = Math.floor(obj.val).toLocaleString(); }
+        });
+    });
+});
+</script>
+
+<style>
+@keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-8px)} }
+</style>
+</body>
+</html>

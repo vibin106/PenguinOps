@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - PenguinOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body class="bg-dark flex">
+
+    <!-- Sidebar -->
+    <aside class="sidebar h-screen sticky top-0 shrink-0">
+        <a href="dashboard.html" class="sidebar-logo text-glow-blue">🐧 PenguinOps</a>
+        <div class="mb-8">
+            <div class="text-xs text-muted font-bold uppercase tracking-wider mb-4 px-4">Menu</div>
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="nav-link"><span>📊</span> Dashboard</a></li>
+                <li><a href="projects.html" class="nav-link"><span>📁</span> Projects</a></li>
+                <li><a href="tasks.html" class="nav-link"><span>📋</span> Tasks</a></li>
+                <li><a href="leaderboard.html" class="nav-link"><span>🏆</span> Leaderboard</a></li>
+                <li><a href="badges.html" class="nav-link"><span>🏅</span> Badges</a></li>
+                <li><a href="ai-assistant.html" class="nav-link"><span>🤖</span> AI Assistant</a></li>
+                <li><a href="team.html" class="nav-link"><span>👥</span> Team</a></li>
+            </ul>
+        </div>
+
+        <div class="mt-auto">
+            <div class="text-xs text-muted font-bold uppercase tracking-wider mb-4 px-4">Account</div>
+            <ul class="nav-links">
+                <li><a href="profile.html" class="nav-link active"><span>👤</span> Profile</a></li>
+                <li><a href="#" id="logout-btn" class="nav-link text-red-400 hover:text-red-300"><span>🚪</span> Logout</a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content flex-1 max-w-4xl mx-auto">
+        <header class="mb-12">
+            <h1 class="text-4xl font-bold brand-font text-glow-blue">Player Profile</h1>
+            <p class="text-muted mt-2">View your stats and manage account settings.</p>
+        </header>
+
+        <div class="glass-panel p-8 flex flex-col md:flex-row gap-8 items-start relative overflow-hidden">
+            <!-- Background Glow -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-neon-blue blur-[100px] opacity-10 rounded-full mix-blend-screen pointer-events-none"></div>
+
+            <div class="shrink-0 text-center relative z-10" id="profile-anim">
+                <div class="w-32 h-32 rounded-full border-4 border-neon-blue overflow-hidden shadow-[0_0_20px_#00f0ff] mb-4 mx-auto bg-black/50">
+                    <img id="profile-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Commander" alt="Avatar" class="w-full h-full object-cover">
+                </div>
+                <button class="btn-outline text-xs px-3 py-1">Change Avatar</button>
+            </div>
+            
+            <div class="flex-1 w-full relative z-10">
+                <form id="profile-form" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Alias (Username)</label>
+                            <input type="text" id="prof-name" class="input-glass" value="Commander">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Email</label>
+                            <input type="email" id="prof-email" class="input-glass" value="player1@penguinops.com" readonly>
+                            <p class="text-xs text-muted mt-1">Email cannot be changed.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Bio / Battle Cry</label>
+                        <textarea id="prof-bio" class="input-glass h-24 resize-none" placeholder="Let your squad know your tactical approach...">Ready for deployment 🚀</textarea>
+                    </div>
+
+                    <div class="border-t border-[rgba(255,255,255,0.1)] pt-6 flex justify-between items-center mt-6">
+                        <div>
+                            <h3 class="font-bold text-lg">Change Password</h3>
+                            <p class="text-xs text-muted">Ensure your account is secure.</p>
+                        </div>
+                        <button type="button" class="btn-outline" onclick="alert('Password reset link sent to your email.')">Send Reset Link</button>
+                    </div>
+
+                    <div class="pt-6 flex justify-end">
+                        <button type="submit" class="btn-primary" id="save-btn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/auth.js"></script>
+    <script type="module">
+        import { initProfile } from './js/profile.js';
+        import { Auth } from './js/auth.js';
+        import { apiRequest } from './js/api.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                Auth.logout();
+            });
+
+            // GSAP Entry
+            gsap.from('#profile-anim', { x: -50, opacity: 0, duration: 0.8, ease: 'power3.out' });
+            
+            const userData = JSON.parse(localStorage.getItem('penguin_user'));
+            if (userData) {
+                document.getElementById('prof-name').value = userData.name || 'Commander';
+                document.getElementById('prof-email').value = userData.email || 'player1@penguinops.com';
+                document.getElementById('profile-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${userData.name || 'Commander'}`;
+            }
+
+            document.getElementById('profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('save-btn');
+                const newName = document.getElementById('prof-name').value;
+                const bio = document.getElementById('prof-bio').value;
+                
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                try {
+                    // await apiRequest('/protected/profile', 'PUT', { name: newName, bio });
+                    // Mock success
+                    await new Promise(r => setTimeout(r, 800));
+                    
+                    if (userData) {
+                        userData.name = newName;
+                        localStorage.setItem('penguin_user', JSON.stringify(userData));
+                    }
+                    
+                    alert('Profile updated successfully!');
+                    document.getElementById('profile-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${newName}`;
+                } catch(error) {
+                    alert('Error updating profile');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Save Changes';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

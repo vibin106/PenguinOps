@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects – PenguinOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+<div class="app-container">
+
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content page-fade">
+        <!-- Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title gradient-text">Missions</h1>
+                <p class="page-subtitle">Manage your strategic operations &amp; deployments</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span id="project-count-badge" class="tag" style="font-size:.8rem">0 projects</span>
+                <!-- Only managers/admins see this -->
+                <button class="btn-primary manager-only hidden" id="open-create-modal">＋ New Mission</button>
+            </div>
+        </div>
+
+        <!-- Member notice -->
+        <div class="glass-panel member-only hidden" id="member-notice" style="padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:22px;border:1px solid rgba(0,240,255,0.15)">
+            <span style="font-size:1.3rem">ℹ️</span>
+            <span style="font-size:.875rem;color:var(--text-sub)">You're viewing projects as a <strong>Team Member</strong>. Only managers can create or delete projects.</span>
+        </div>
+
+        <!-- Projects Grid -->
+        <div id="projects-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+            <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)" id="projects-loading">
+                <div style="font-size:2rem;margin-bottom:10px">⏳</div>
+                Loading missions…
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Create Modal -->
+<div id="create-modal" style="display:none" class="modal-overlay">
+    <div class="modal-box" id="modal-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+            <h2 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800" class="gradient-text">Initialize New Mission</h2>
+            <button id="close-modal" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <form id="create-project-form">
+            <div style="margin-bottom:16px">
+                <label style="display:block;font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">Mission Name *</label>
+                <input type="text" id="project-name" class="input-glass" placeholder="e.g. Mobile App v2.0" required>
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="display:block;font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">Description</label>
+                <textarea id="project-desc" class="input-glass" style="height:90px;resize:none" placeholder="Describe the mission objective…"></textarea>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px">
+                <button type="button" class="btn-outline" id="cancel-modal-btn">Cancel</button>
+                <button type="submit" class="btn-primary" id="create-submit-btn">🚀 Deploy Mission</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { Auth, protectRoute, applyRoleUI } from './js/auth.js';
+import { initSidebar, showToast, openModal, closeModal } from './js/ui.js';
+import { Animations }             from './js/animations.js';
+import { apiRequest }             from './js/api.js';
+
+protectRoute();
+applyRoleUI();
+
+document.addEventListener('DOMContentLoaded', async () => {
+    initSidebar('projects.html');
+
+    const role = localStorage.getItem('role') || 'member';
+    const isManager = role === 'admin' || role === 'manager';
+    // applyRoleUI() already toggled .manager-only / .member-only above
+
+    if (isManager) {
+        document.querySelectorAll('.manager-only').forEach(el => el.classList.remove('hidden'));
+    } else {
+        document.querySelectorAll('.member-only').forEach(el => el.classList.remove('hidden'));
+    }
+
+    // Modal
+    document.getElementById('open-create-modal')?.addEventListener('click', () => openModal('create-modal','modal-box'));
+    document.getElementById('close-modal')?.addEventListener('click', () => closeModal('create-modal','modal-box','create-project-form'));
+    document.getElementById('cancel-modal-btn')?.addEventListener('click', () => closeModal('create-modal','modal-box','create-project-form'));
+
+    // Load
+    await loadProjects();
+
+    // Create
+    document.getElementById('create-project-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('create-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Deploying…';
+
+        const name = document.getElementById('project-name').value.trim();
+        const description = document.getElementById('project-desc').value.trim();
+        const dummyTeamId = '60b8d295f1d2b270a0000000';
+
+        try {
+            await apiRequest('/projects/', 'POST', { name, description, team_id: dummyTeamId });
+            closeModal('create-modal','modal-box','create-project-form');
+            showToast('Mission deployed successfully!', 'success');
+            await loadProjects();
+        } catch(err) {
+            showToast('Failed to create project: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🚀 Deploy Mission';
+        }
+    });
+});
+
+async function loadProjects() {
+    const container = document.getElementById('projects-container');
+    const loading   = document.getElementById('projects-loading');
+    const badge     = document.getElementById('project-count-badge');
+    const user      = JSON.parse(localStorage.getItem('penguin_user') || '{}');
+    const role      = user.role || 'member';
+    const isManager = role === 'admin' || role === 'manager';
+
+    try {
+        const data = await apiRequest('/projects/', 'GET');
+        const projects = Array.isArray(data) ? data : [];
+
+        badge.textContent = `${projects.length} project${projects.length !== 1 ? 's' : ''}`;
+        container.innerHTML = '';
+
+        if (!projects.length) {
+            container.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--text-muted)">
+                    <div style="font-size:3rem;margin-bottom:14px">🚀</div>
+                    <div style="font-size:1rem;font-weight:600;margin-bottom:8px">${isManager ? 'No missions yet.' : 'No projects assigned to you.'}</div>
+                    ${isManager ? '<p style="font-size:.85rem">Click <strong>New Mission</strong> to deploy your first project.</p>' : ''}
+                </div>`;
+            return;
+        }
+
+        const statusColors = { active:'var(--neon-green)', 'in_progress':'var(--neon-blue)', completed:'var(--neon-purple)', paused:'var(--neon-orange)' };
+
+        projects.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'glass-card';
+            card.style.cssText = 'padding:22px;display:flex;flex-direction:column;gap:16px;transition:all .25s';
+            const sc = statusColors[p.status] || 'var(--text-muted)';
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(168,85,247,0.15));border:1px solid rgba(0,240,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📁</div>
+                        <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;line-height:1.3">${p.name}</h3>
+                    </div>
+                    ${isManager ? `<button class="btn-danger delete-project-btn" data-id="${p.id||p._id}" style="padding:5px 10px;font-size:.75rem">🗑</button>` : ''}
+                </div>
+                <p style="font-size:.84rem;color:var(--text-muted);line-height:1.5;flex:1">${p.description || 'No description provided.'}</p>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${sc}">● ${p.status || 'Active'}</span>
+                    <a href="tasks.html?project=${p.id||p._id}" class="btn-outline" style="font-size:.78rem;padding:7px 14px">View Tasks →</a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        // Delete buttons
+        document.querySelectorAll('.delete-project-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.currentTarget.dataset.id;
+                if (!confirm('Abort this mission? This action cannot be undone.')) return;
+                try {
+                    await apiRequest(`/projects/${id}`, 'DELETE');
+                    showToast('Mission aborted.', 'success');
+                    loadProjects();
+                } catch(err) {
+                    showToast('Could not delete project.', 'error');
+                }
+            });
+        });
+
+        Animations.staggerCards('.glass-card');
+
+    } catch(err) {
+        container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)">Could not load missions. Is the backend running?</div>`;
+        showToast('Failed to load projects.', 'error');
+    }
+}
+</script>
+</body>
+</html>

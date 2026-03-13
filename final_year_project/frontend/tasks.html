@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks – PenguinOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        .kanban-board { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; height:calc(100vh - 168px); }
+        .kanban-tasks-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:2px; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content page-fade" style="overflow:hidden;display:flex;flex-direction:column">
+
+        <!-- Header -->
+        <div class="page-header" style="flex-shrink:0">
+            <div>
+                <h1 class="page-title gradient-text">Task Board</h1>
+                <p class="page-subtitle">Drag cards across lanes · Complete tasks to earn XP</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <select id="project-filter" class="input-glass" style="width:200px;padding:9px 12px;font-size:.85rem">
+                    <option value="">All Projects</option>
+                </select>
+                <button class="btn-primary manager-only hidden" id="open-task-modal">＋ Add Task</button>
+            </div>
+        </div>
+
+        <!-- Kanban -->
+        <div class="kanban-board" style="flex:1;min-height:0">
+
+            <!-- Column: Todo -->
+            <div class="kanban-column" id="col-pending" data-status="pending">
+                <div class="kanban-col-header">
+                    <div class="kanban-col-title">
+                        <span class="col-dot todo"></span> To Do
+                    </div>
+                    <span class="kanban-count" id="count-pending">0</span>
+                </div>
+                <div class="kanban-tasks-list" id="list-pending"></div>
+                <button class="manager-only hidden" id="quick-add-pending" style="margin-top:10px;width:100%;padding:8px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.1);color:var(--text-muted);cursor:pointer;font-size:.82rem;transition:all .2s">＋ Add card</button>
+            </div>
+
+            <!-- Column: In Progress -->
+            <div class="kanban-column" id="col-in_progress" data-status="in_progress">
+                <div class="kanban-col-header">
+                    <div class="kanban-col-title">
+                        <span class="col-dot progress"></span> In Progress
+                    </div>
+                    <span class="kanban-count" id="count-in_progress">0</span>
+                </div>
+                <div class="kanban-tasks-list" id="list-in_progress"></div>
+            </div>
+
+            <!-- Column: Done -->
+            <div class="kanban-column" id="col-completed" data-status="completed">
+                <div class="kanban-col-header">
+                    <div class="kanban-col-title">
+                        <span class="col-dot done"></span> Completed
+                    </div>
+                    <span class="kanban-count" id="count-completed">0</span>
+                </div>
+                <div class="kanban-tasks-list" id="list-completed"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Add Task Modal -->
+<div id="task-modal" style="display:none" class="modal-overlay">
+    <div class="modal-box" id="task-modal-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+            <h2 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800" class="gradient-text">New Task</h2>
+            <button id="close-task-modal" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <form id="create-task-form">
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Task Title *</label>
+                <input type="text" id="task-title" class="input-glass" placeholder="e.g. Design login page" required>
+            </div>
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Description</label>
+                <textarea id="task-desc" class="input-glass" style="height:80px;resize:none" placeholder="Task details…"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+                <div>
+                    <label style="display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Priority</label>
+                    <select id="task-priority" class="input-glass" style="padding:10px 12px">
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">XP Reward</label>
+                    <input type="number" id="task-xp" class="input-glass" value="20" min="5" max="500" style="padding:10px 12px">
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px">
+                <button type="button" id="cancel-task-btn" class="btn-outline">Cancel</button>
+                <button type="submit" class="btn-primary" id="task-submit-btn">📋 Create Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { Auth, protectRoute, applyRoleUI } from './js/auth.js';
+import { initSidebar, showToast, openModal, closeModal } from './js/ui.js';
+import { Animations }             from './js/animations.js';
+import { apiRequest }             from './js/api.js';
+
+protectRoute();
+applyRoleUI();
+
+document.addEventListener('DOMContentLoaded', async () => {
+    initSidebar('tasks.html');
+
+    const role = localStorage.getItem('role') || 'member';
+    const isManager = role === 'admin' || role === 'manager';
+    // applyRoleUI() already toggled .manager-only elements above
+
+    let tasks = [];
+    let draggedId = null;
+
+    // ─── Load tasks (mock if no project selected) ───
+    async function loadTasks(projectId) {
+        const statuses = ['pending','in_progress','completed'];
+
+        if (!projectId) {
+            // Mock data for demo
+            tasks = [
+                { id:'t1', title:'Design wireframes', status:'pending',    priority:'high',   xp_reward:50 },
+                { id:'t2', title:'Backend auth API',  status:'pending',    priority:'medium', xp_reward:30 },
+                { id:'t3', title:'Kanban UI',         status:'in_progress',priority:'high',   xp_reward:80 },
+                { id:'t4', title:'Write unit tests',  status:'in_progress',priority:'low',    xp_reward:20 },
+                { id:'t5', title:'Deploy MVP',        status:'completed',  priority:'high',   xp_reward:100 },
+            ];
+        } else {
+            try {
+                const data = await apiRequest(`/tasks/project/${projectId}`, 'GET');
+                tasks = Array.isArray(data) ? data : [];
+            } catch(e) {
+                showToast('Could not fetch tasks', 'error');
+                tasks = [];
+            }
+        }
+        renderBoard();
+    }
+
+    function renderBoard() {
+        const columns = ['pending','in_progress','completed'];
+        columns.forEach(status => {
+            const listEl  = document.getElementById(`list-${status}`);
+            const countEl = document.getElementById(`count-${status}`);
+            if (!listEl) return;
+
+            const col = tasks.filter(t => t.status === status);
+            countEl.textContent = col.length;
+            listEl.innerHTML = '';
+
+            col.forEach(task => {
+                const el = createTaskCard(task);
+                listEl.appendChild(el);
+            });
+        });
+        Animations.staggerCards('.task-card');
+    }
+
+    function createTaskCard(task) {
+        const el = document.createElement('div');
+        el.className = 'task-card';
+        el.draggable = true;
+        el.dataset.id = task.id || task._id || task.id;
+
+        const priClass = { high:'priority-high', medium:'priority-medium', low:'priority-low' };
+
+        el.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+                <span class="priority-badge ${priClass[task.priority]||'priority-medium'}">${task.priority||'medium'}</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:.72rem;color:var(--neon-green);font-weight:700;background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2);padding:2px 7px;border-radius:20px">⚡${task.xp_reward||10}</span>
+                    ${isManager ? `<button class="delete-task-btn" data-id="${task.id||task._id}" style="width:22px;height:22px;border-radius:6px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>` : ''}
+                </div>
+            </div>
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:${task.desc?'6px':'0'}">${task.title}</div>
+            ${task.desc ? `<div style="font-size:.78rem;color:var(--text-muted);line-height:1.4">${task.desc}</div>` : ''}
+        `;
+
+        // Drag events
+        el.addEventListener('dragstart', e => {
+            draggedId = task.id || task._id;
+            e.dataTransfer.setData('text/plain', draggedId);
+            setTimeout(() => el.classList.add('dragging'), 0);
+        });
+        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+        // Delete
+        el.querySelector('.delete-task-btn')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = e.currentTarget.dataset.id;
+            if (!confirm('Delete this task?')) return;
+            try {
+                await apiRequest(`/tasks/${id}`, 'DELETE');
+                tasks = tasks.filter(t => (t.id||t._id) !== id);
+                renderBoard();
+                showToast('Task deleted.', 'success');
+            } catch {
+                showToast('Could not delete task.', 'error');
+            }
+        });
+
+        return el;
+    }
+
+    // ─── Drop zones ───
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        col.addEventListener('dragover', e => {
+            e.preventDefault();
+            col.classList.add('drag-over');
+        });
+        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+        col.addEventListener('drop', async e => {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+            const id        = e.dataTransfer.getData('text/plain');
+            const newStatus = col.dataset.status;
+            const task      = tasks.find(t => (t.id||t._id) === id);
+            if (!task || task.status === newStatus) return;
+
+            const oldStatus  = task.status;
+            task.status      = newStatus;
+            renderBoard(); // optimistic
+
+            try {
+                await apiRequest(`/tasks/${id}/status`, 'PUT', { status: newStatus });
+                showToast(`Moved to ${newStatus.replace('_',' ')}`, 'success');
+            } catch {
+                task.status = oldStatus;
+                renderBoard();
+                showToast('Failed to update task status.', 'error');
+            }
+        });
+    });
+
+    // ─── Create task ───
+    document.getElementById('open-task-modal')?.addEventListener('click', () => openModal('task-modal','task-modal-box'));
+    document.getElementById('close-task-modal')?.addEventListener('click', () => closeModal('task-modal','task-modal-box','create-task-form'));
+    document.getElementById('cancel-task-btn')?.addEventListener('click', () => closeModal('task-modal','task-modal-box','create-task-form'));
+
+    document.getElementById('create-task-form')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = document.getElementById('task-submit-btn');
+        btn.disabled = true; btn.textContent = 'Creating…';
+
+        const projectId = document.getElementById('project-filter').value || '60b8d295f1d2b270a0000000';
+        const title     = document.getElementById('task-title').value.trim();
+        const desc      = document.getElementById('task-desc').value.trim();
+        const priority  = document.getElementById('task-priority').value;
+        const xp_reward = parseInt(document.getElementById('task-xp').value, 10);
+
+        try {
+            await apiRequest('/tasks/', 'POST', { title, description: desc, priority, xp_reward, project_id: projectId });
+            closeModal('task-modal','task-modal-box','create-task-form');
+            showToast('Task created! 📋', 'success');
+            await loadTasks(document.getElementById('project-filter').value || null);
+        } catch(err) {
+            showToast('Could not create task: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '📋 Create Task';
+        }
+    });
+
+    // ─── Project filter ───
+    // Load projects into selector
+    try {
+        const pData = await apiRequest('/projects/', 'GET');
+        const sel = document.getElementById('project-filter');
+        if (Array.isArray(pData)) {
+            pData.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id || p._id;
+                opt.textContent = p.name;
+                sel.appendChild(opt);
+            });
+        }
+    } catch {}
+
+    document.getElementById('project-filter').addEventListener('change', (e) => {
+        loadTasks(e.target.value || null);
+    });
+
+    // Quick-add card
+    document.getElementById('quick-add-pending')?.addEventListener('click', () => openModal('task-modal','task-modal-box'));
+
+    // Initial load
+    await loadTasks(null);
+});
+</script>
+</body>
+</html>

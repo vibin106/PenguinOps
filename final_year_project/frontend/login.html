@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In – PenguinOps</title>
+    <meta name="description" content="Log in to PenguinOps — your AI-powered gamified project command center.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        .auth-card { width:100%; max-width:440px; }
+    </style>
+</head>
+<body>
+
+<div class="auth-card" style="position:relative;z-index:1">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px" id="logo-area">
+        <div style="width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple));display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;box-shadow:0 0 30px rgba(79,200,255,0.4)">🐧</div>
+        <h1 style="font-family:'Outfit',sans-serif;font-size:1.75rem;font-weight:800;background:linear-gradient(90deg,var(--neon-frost),var(--neon-blue),var(--neon-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">PenguinOps</h1>
+        <p style="color:var(--text-muted);font-size:.88rem;margin-top:5px">AI-powered mission control awaits</p>
+    </div>
+
+    <!-- Card -->
+    <div class="glass-panel" style="padding:32px">
+        <h2 style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:5px">Sign In</h2>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:24px">Enter your credentials to access Command Center</p>
+
+        <!-- Error banner (hidden by default) -->
+        <div id="error-banner"
+             style="display:none;align-items:center;gap:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:11px 14px;font-size:.85rem;color:#f87171;margin-bottom:16px">
+            <span>⚠️</span><span id="error-text">Login failed.</span>
+        </div>
+
+        <!-- ── FORM — Note: no 'action', submission handled by handleLogin() ── -->
+        <form id="login-form" onsubmit="return false">
+
+            <div style="margin-bottom:16px">
+                <label for="email"
+                       style="display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">
+                    Email
+                </label>
+                <input type="email" id="email" name="email"
+                       class="input-glass"
+                       placeholder="commander@penguinops.com"
+                       required autocomplete="email">
+            </div>
+
+            <div style="margin-bottom:22px">
+                <label for="password"
+                       style="display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">
+                    Password
+                </label>
+                <input type="password" id="password" name="password"
+                       class="input-glass"
+                       placeholder="••••••••"
+                       required autocomplete="current-password">
+            </div>
+
+            <!--
+                STEP 2 — Login button calls handleLogin()
+                Both the button click AND form submit are wired.
+            -->
+            <button type="button"
+                    id="login-btn"
+                    onclick="handleLogin()"
+                    class="btn-primary"
+                    style="width:100%;justify-content:center;padding:13px">
+                <span id="btn-text">Sign In →</span>
+            </button>
+        </form>
+
+        <!-- Also allow Enter key on form -->
+        <script>
+            document.getElementById('login-form').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') handleLogin();
+            });
+        </script>
+
+        <div style="text-align:center;margin-top:20px;font-size:.85rem;color:var(--text-muted)">
+            No account?
+            <a href="register.html"
+               style="color:var(--neon-blue);font-weight:600;text-decoration:none">
+               Join the Squad →
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════
+     AUTH SCRIPT
+     handleLogin() is a plain global function so it can
+     be called from onclick without a module import.
+═══════════════════════════════════════════════════ -->
+<script type="module">
+// Redirect authenticated users away from login
+if (localStorage.getItem('token')) {
+    window.location.replace('dashboard.html');
+}
+
+// Import handleLogin and expose it globally so the
+// onclick="handleLogin()" attribute can reach it.
+import { handleLogin as _handleLogin } from './js/auth.js';
+window.handleLogin = _handleLogin;
+
+// GSAP entrance animations
+document.addEventListener('DOMContentLoaded', () => {
+    gsap.from('#logo-area',  { y: -30, opacity: 0, duration: 0.8, ease: 'power3.out' });
+    gsap.from('.glass-panel',{ y:  30, opacity: 0, duration: 0.7, delay: 0.15, ease: 'power3.out' });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard – PenguinOps</title>
+    <meta name="description" content="PenguinOps command center – track XP, projects, tasks and team stats.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link  rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- ──── SIDEBAR ──── -->
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <!-- ──── MAIN ──── -->
+    <main class="main-content page-fade">
+
+        <!-- Header -->
+        <div class="page-header" id="db-header">
+            <div>
+                <!--
+                    id="username" → displayUsername() writes "Welcome <name>" here (STEP 6)
+                    id="user-name" → also updated inline for the subtitle span below
+                -->
+                <h1 class="page-title gradient-text" id="username">Command Center</h1>
+                <p class="page-subtitle">
+                    <span id="user-name" style="color:var(--neon-blue);font-weight:600">Commander</span>
+                    &nbsp;·&nbsp;
+                    <span class="role-badge member" id="role-badge" style="vertical-align:middle">🐧 Member</span>
+                </p>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+                <!-- Level pill -->
+                <div class="glass-card" style="padding:10px 18px;display:flex;align-items:center;gap:12px;min-width:180px">
+                    <div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Level</div>
+                        <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:var(--neon-purple)" id="user-level">1</div>
+                    </div>
+                    <div style="flex:1">
+                        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-muted);margin-bottom:5px">
+                            <span>XP Progress</span>
+                            <span id="xp-text" style="color:var(--neon-purple)">0 / 1000</span>
+                        </div>
+                        <div class="xp-bar-track">
+                            <div class="xp-bar-fill" id="xp-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick action for managers -->
+                <button class="btn-primary manager-only hidden" id="quick-create-project" onclick="window.location='projects.html'">
+                    ＋ New Project
+                </button>
+            </div>
+        </div>
+
+        <!-- ──── STATS ──── -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card blue">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-label">Total XP Earned</div>
+                <div class="stat-value text-glow-blue" id="stat-xp">0</div>
+                <span class="stat-trend" style="color:var(--neon-green)">↑ 12% this week</span>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-icon">📁</div>
+                <div class="stat-label">Active Projects</div>
+                <div class="stat-value text-glow-purple" id="stat-projects">0</div>
+                <span class="stat-trend" style="color:var(--text-muted)">Across all teams</span>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label">Tasks Completed</div>
+                <div class="stat-value text-glow-green" id="stat-tasks">0</div>
+                <span class="stat-trend" style="color:var(--neon-green)">↑ 8 this week</span>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-label">Global Rank</div>
+                <div class="stat-value text-glow-orange" id="stat-rank">#--</div>
+                <span class="stat-trend" style="color:var(--text-muted)">Leaderboard position</span>
+            </div>
+        </div>
+
+        <!-- ──── MAIN PANELS ──── -->
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
+
+            <!-- Chart + activity -->
+            <div style="display:flex;flex-direction:column;gap:20px">
+
+                <!-- Manager Quick Actions -->
+                <div class="glass-panel manager-only hidden" style="padding:20px" id="manager-actions-panel">
+                    <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:14px;color:var(--neon-purple)">⚡ Manager Controls</h3>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px">
+                        <a href="projects.html" class="btn-primary" style="font-size:.85rem;padding:9px 16px">📁 Create Project</a>
+                        <a href="tasks.html" class="btn-primary" style="font-size:.85rem;padding:9px 16px;background:linear-gradient(135deg,#a855f7,#7c3aed)">📋 Assign Tasks</a>
+                        <a href="team.html"  class="btn-primary" style="font-size:.85rem;padding:9px 16px;background:linear-gradient(135deg,#ff7b00,#ff4500)">👥 Manage Team</a>
+                        <a href="ai-assistant.html" class="btn-outline" style="font-size:.85rem;padding:8px 16px">🤖 Ask AI</a>
+                    </div>
+                </div>
+
+                <!-- Activity Chart -->
+                <div class="glass-panel" style="padding:24px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                        <h2 style="font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:700">Activity Overview</h2>
+                        <span class="tag">Last 7 Days</span>
+                    </div>
+                    <div style="height:240px;position:relative">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent activity feed -->
+                <div class="glass-panel" style="padding:24px">
+                    <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:16px">Recent Activity</h3>
+                    <ul id="activity-feed" style="display:flex;flex-direction:column;gap:10px">
+                        <li style="color:var(--text-muted);font-size:.85rem">Loading feed…</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right column -->
+            <div style="display:flex;flex-direction:column;gap:20px">
+
+                <!-- XP Level card -->
+                <div class="glass-panel" style="padding:22px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700">Level Progress</h3>
+                        <span style="font-size:.75rem;color:var(--text-muted)" id="xp-sub-text">0 / 1000 XP</span>
+                    </div>
+                    <div class="xp-bar-track" style="height:10px;margin-bottom:12px">
+                        <div class="xp-bar-fill" id="xp-bar-panel"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted)">
+                        <span>Level <span id="cur-level">1</span></span>
+                        <span>Level <span id="next-level">2</span></span>
+                    </div>
+                </div>
+
+                <!-- Leaderboard preview -->
+                <div class="glass-panel" style="padding:22px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                        <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700">🏆 Top Penguins</h3>
+                        <a href="leaderboard.html" style="font-size:.78rem;color:var(--neon-blue);text-decoration:none">View all →</a>
+                    </div>
+                    <ul id="lb-preview" style="display:flex;flex-direction:column;gap:10px">
+                        <li style="color:var(--text-muted);font-size:.85rem">Loading…</li>
+                    </ul>
+                </div>
+
+                <!-- Quick links for members -->
+                <div class="glass-panel member-view" style="padding:22px">
+                    <h3 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:14px">Quick Access</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                        <a href="tasks.html" class="glass-card" style="padding:14px;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:6px">
+                            <span style="font-size:1.6rem">📋</span>
+                            <span style="font-size:.8rem;font-weight:600;color:var(--text-sub)">My Tasks</span>
+                        </a>
+                        <a href="leaderboard.html" class="glass-card" style="padding:14px;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:6px">
+                            <span style="font-size:1.6rem">🏆</span>
+                            <span style="font-size:.8rem;font-weight:600;color:var(--text-sub)">Leaderboard</span>
+                        </a>
+                        <a href="badges.html" class="glass-card" style="padding:14px;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:6px">
+                            <span style="font-size:1.6rem">🏅</span>
+                            <span style="font-size:.8rem;font-weight:600;color:var(--text-sub)">Badges</span>
+                        </a>
+                        <a href="ai-assistant.html" class="glass-card" style="padding:14px;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:6px">
+                            <span style="font-size:1.6rem">🤖</span>
+                            <span style="font-size:.8rem;font-weight:600;color:var(--text-sub)">Ask AI</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+import { Auth, protectRoute, applyRoleUI, displayUsername } from './js/auth.js';
+import { initSidebar, showToast } from './js/ui.js';
+import { Animations }  from './js/animations.js';
+import { PenguinGuide } from './js/penguin-guide.js';
+import { apiRequest }  from './js/api.js';
+
+Auth.protectRoute();
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Sidebar
+    initSidebar('dashboard.html');
+    Animations.initNavGlow();
+
+    // STEP 6 — Display username
+    displayUsername();
+
+    // STEP 4 — Apply role-based UI
+    applyRoleUI();
+
+    const role  = localStorage.getItem('role') || 'member';
+    const name  = localStorage.getItem('username') || 'Commander';
+
+    // Greet — id="username" works with displayUsername(), also update name span
+    document.getElementById('user-name').textContent = name;
+
+    // Role badge
+    const rb = document.getElementById('role-badge');
+    const roleCls   = { admin:'admin', manager:'manager', member:'member' };
+    const roleLabel = { admin:'⚡ Admin', manager:'🛡 Manager', member:'🐧 Member' };
+    if (rb) {
+        rb.className  = `role-badge ${roleCls[role] || 'member'}`;
+        rb.textContent = roleLabel[role] || '🐧 Member';
+    }
+    // applyRoleUI() already toggled .manager-only / .member-only above
+
+    // ── Pull real data ──
+    let projectCount = 0;
+    try {
+        const pData = await apiRequest('/projects/', 'GET');
+        if (Array.isArray(pData)) projectCount = pData.length;
+    } catch(e) {}
+
+    // Stats (mix real + local cache values)
+    const xp    = user.xp    ?? 1250;
+    const level = user.level ?? 3;
+    const nextXP = level * 1000;
+    const xpPct  = Math.min((xp / nextXP) * 100, 100);
+
+    document.getElementById('user-level').textContent = level;
+    document.getElementById('cur-level').textContent  = level;
+    document.getElementById('next-level').textContent = level + 1;
+    document.getElementById('xp-text').textContent    = `${xp.toLocaleString()} / ${nextXP.toLocaleString()}`;
+    document.getElementById('xp-sub-text').textContent= `${xp.toLocaleString()} / ${nextXP.toLocaleString()} XP`;
+
+    Animations.countUp('#stat-xp',       xp,           '', '', 1.6);
+    Animations.countUp('#stat-projects',  projectCount, '', '', 1.4);
+    Animations.countUp('#stat-tasks',     42,           '', '', 1.5);
+    document.getElementById('stat-rank').textContent = '#12';
+
+    Animations.fillXPBar('#xp-bar',       xpPct);
+    Animations.fillXPBar('#xp-bar-panel', xpPct);
+
+    // Stagger stat cards
+    Animations.staggerCards('.stat-card');
+    Animations.staggerCards('.glass-panel', 0.1);
+
+    // ── Leaderboard preview ──
+    const lbList = document.getElementById('lb-preview');
+    const lbData = [
+        { name:'PenguinMaster', xp:9001, rank:1 },
+        { name:'IceKing',       xp:8500, rank:2 },
+        { name:'SnowDrifter',   xp:7200, rank:3 },
+    ];
+    lbList.innerHTML = lbData.map((u,i) => {
+        const medalColors = ['#ffe54c','#a0aec0','#ff7b00'];
+        return `<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04)">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.1rem;color:${medalColors[i]};width:22px">#${u.rank}</span>
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${u.name}" style="width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,0.1)">
+                <span style="font-weight:600;font-size:.85rem">${u.name}</span>
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--neon-blue);font-weight:600">${u.xp.toLocaleString()}</span>
+        </li>`;
+    }).join('');
+
+    // ── Activity feed ──
+    const feed = document.getElementById('activity-feed');
+    const feedItems = [
+        { icon:'✅', text:'Completed "Design wireframes"',    time:'2m ago',  xp:'+50 XP' },
+        { icon:'📁', text:'Created project "App MVP"',        time:'1h ago',  xp:'+100 XP' },
+        { icon:'🏅', text:'Earned badge "First Mission"',     time:'3h ago',  xp:'Badge' },
+        { icon:'📋', text:'Assigned 3 tasks to IceKing',      time:'5h ago',  xp:'' },
+    ];
+    feed.innerHTML = feedItems.map(f => `
+        <li style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)">
+            <span style="font-size:1.2rem;flex-shrink:0">${f.icon}</span>
+            <span style="flex:1;font-size:.85rem;color:var(--text-sub)">${f.text}</span>
+            <div style="text-align:right;flex-shrink:0">
+                ${f.xp ? `<div style="font-size:.7rem;color:var(--neon-green);font-weight:700">${f.xp}</div>` : ''}
+                <div style="font-size:.7rem;color:var(--text-muted)">${f.time}</div>
+            </div>
+        </li>
+    `).join('');
+
+    // ── Chart.js ──
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const g   = ctx.createLinearGradient(0, 0, 0, 220);
+    g.addColorStop(0, 'rgba(0,240,255,0.35)');
+    g.addColorStop(1, 'rgba(168,85,247,0.0)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels:   ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+            datasets: [{
+                label:           'Tasks Completed',
+                data:            [5, 8, 3, 12, 7, 15, 9],
+                borderColor:     '#00f0ff',
+                backgroundColor: g,
+                borderWidth:     2.5,
+                pointBackgroundColor:    '#a855f7',
+                pointBorderColor:        '#fff',
+                pointRadius:             4,
+                pointHoverRadius:        7,
+                fill: true, tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(13,16,23,0.95)',
+                    titleColor: '#00f0ff', bodyColor: '#e8eaf0',
+                    borderColor: 'rgba(0,240,255,0.25)', borderWidth: 1, padding: 12,
+                    displayColors: false,
+                    callbacks: { label: ctx => ctx.parsed.y + ' tasks' }
+                }
+            },
+            scales: {
+                y: { beginAtZero:true, grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#6b7280' }, border:{ display:false } },
+                x: { grid:{ display:false }, ticks:{ color:'#6b7280' }, border:{ display:false } }
+            },
+            animation: { duration:1800, easing:'easeOutQuart' }
+        }
+    });
+
+    // Penguin guide
+    window.guide = new PenguinGuide();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team - PenguinOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-dark flex">
+
+    <!-- Sidebar -->
+    <aside class="sidebar h-screen sticky top-0 shrink-0">
+        <a href="dashboard.html" class="sidebar-logo text-glow-blue">🐧 PenguinOps</a>
+        <div class="mb-8">
+            <div class="text-xs text-muted font-bold uppercase tracking-wider mb-4 px-4">Menu</div>
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="nav-link"><span>📊</span> Dashboard</a></li>
+                <li><a href="projects.html" class="nav-link"><span>📁</span> Projects</a></li>
+                <li><a href="tasks.html" class="nav-link"><span>📋</span> Tasks</a></li>
+                <li><a href="leaderboard.html" class="nav-link"><span>🏆</span> Leaderboard</a></li>
+                <li><a href="badges.html" class="nav-link"><span>🏅</span> Badges</a></li>
+                <li><a href="ai-assistant.html" class="nav-link"><span>🤖</span> AI Assistant</a></li>
+                <li><a href="team.html" class="nav-link active"><span>👥</span> Team</a></li>
+            </ul>
+        </div>
+
+        <div class="mt-auto">
+            <div class="text-xs text-muted font-bold uppercase tracking-wider mb-4 px-4">Account</div>
+            <ul class="nav-links">
+                <li><a href="profile.html" class="nav-link"><span>👤</span> Profile</a></li>
+                <li><a href="#" id="logout-btn" class="nav-link text-red-400 hover:text-red-300"><span>🚪</span> Logout</a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <main class="main-content flex-1 max-w-6xl mx-auto">
+        <header class="mb-12 flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-bold brand-font text-glow-blue">Squad Directory</h1>
+                <p class="text-muted mt-2">Manage your crew and invite new members.</p>
+            </div>
+            <button class="btn-primary" id="invite-btn">Invite Member 📩</button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="team-grid">
+            <!-- Team Member Card -->
+            <div class="glass-card p-6 flex items-center gap-4">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Admin" class="w-16 h-16 rounded-full border border-[rgba(255,255,255,0.1)] bg-black/50">
+                <div>
+                    <h3 class="font-bold text-lg mb-1">Commander (You)</h3>
+                    <p class="text-xs text-muted mb-2">admin@penguinops.com</p>
+                    <span class="text-xs px-2 py-1 bg-neon-blue/20 text-neon-blue rounded font-bold border border-neon-blue/30">Squad Leader</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 flex items-center gap-4 group hover:border-[#b026ff] transition-colors">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Dev1" class="w-16 h-16 rounded-full border border-[rgba(255,255,255,0.1)] bg-black/50 group-hover:shadow-[0_0_15px_#b026ff] transition-shadow">
+                <div>
+                    <h3 class="font-bold text-lg mb-1">IceKing</h3>
+                    <p class="text-xs text-muted mb-2">dev@penguinops.com</p>
+                    <span class="text-xs px-2 py-1 bg-neon-purple/20 text-neon-purple rounded font-bold border border-neon-purple/30">Developer</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 flex items-center gap-4 group hover:border-orange-400 transition-colors">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Des1" class="w-16 h-16 rounded-full border border-[rgba(255,255,255,0.1)] bg-black/50 group-hover:shadow-[0_0_15px_#fb923c] transition-shadow">
+                <div>
+                    <h3 class="font-bold text-lg mb-1">SnowDrifter</h3>
+                    <p class="text-xs text-muted mb-2">designer@penguinops.com</p>
+                    <span class="text-xs px-2 py-1 bg-orange-400/20 text-orange-400 rounded font-bold border border-orange-400/30">Designer UI</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/auth.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { apiRequest } from './js/api.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                Auth.logout();
+            });
+
+            document.getElementById('invite-btn')?.addEventListener('click', async () => {
+                const memberEmail = prompt("Enter member email to invite:");
+                if(memberEmail) {
+                    try {
+                        const btn = document.getElementById('invite-btn');
+                        btn.disabled = true;
+                        btn.textContent = 'Inviting...';
+                        
+                        // We hit the team creation POST endpoint as a mock proxy 
+                        // for inviting a member, since backend has /teams.
+                        await apiRequest('/teams', 'POST', { name: "Squad Alpha", members: [] });
+                        
+                        // Mock UI update
+                        const grid = document.getElementById('team-grid');
+                        const newName = memberEmail.split('@')[0];
+                        grid.innerHTML += `
+                            <div class="glass-card p-6 flex items-center gap-4 group hover:border-[#b026ff] transition-colors">
+                                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${newName}" class="w-16 h-16 rounded-full border border-[rgba(255,255,255,0.1)] bg-black/50">
+                                <div>
+                                    <h3 class="font-bold text-lg mb-1">${newName}</h3>
+                                    <p class="text-xs text-muted mb-2">${memberEmail}</p>
+                                    <span class="text-xs px-2 py-1 bg-neon-purple/20 text-neon-purple rounded font-bold border border-neon-purple/30">Member</span>
+                                </div>
+                            </div>
+                        `;
+                    } catch(error) {
+                        alert("API Error: Couldn't invite member.");
+                    } finally {
+                        const btn = document.getElementById('invite-btn');
+                        btn.disabled = false;
+                        btn.textContent = 'Invite Member 📩';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
